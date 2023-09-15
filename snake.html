@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            background-color: #f1a907;
+            color: #000000;
+            font-family: Calibri;
+            font-weight: bold;
+            font-size: 24px;
+            border-color: #000000;
+            border-radius: 22px;;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+        
+        button:hover {
+            background-color: #000000;
+            color: #F1A907;
+            font-family: Calibri;
+            font-weight: bold;
+            font-size: 24px;
+            border-color: #000000;
+            border-radius: 14px;;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            box-shadow:  #F1A907 20px 10px 50px;
+        }
+    </style>
+</head>
+<body>
+    <br>
+    <br>
+    <canvas id="game" width="400" height="400"></canvas>
+    <br>
+    <br>
+    <br>
+    <button id="restart", onclick="restart()">Play Again?</button>
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+
+        class SnakePart {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+        
+        let speed = 7; 
+
+        let tileCount = 20;
+        let tileSize = canvas.width / tileCount - 2;
+
+        let headX = 10;
+        let headY = 10;
+        const snakeParts = [];
+        let tailLength = 2;
+
+        let appleX = 5;
+        let appleY = 5;
+
+        let xVelocity = 0;
+        let yVelocity = 0;
+
+        let score = 0;
+
+        const gulpSound = new Audio("gulp.mp3");
+
+        function restart() {
+            location.reload();
+        }
+        
+        // Game Loop
+        function drawGame() {
+            changeSnakePosition();
+            let result = isGameOver();
+            if(result) {
+                return;
+            }
+            
+            clearScreen();
+            
+
+            checkAppleCollision();
+            drawApple();
+            drawSnake();
+
+            drawScore();
+
+            if(score > 2) {
+                speed = 11;
+            }
+            if(score > 5) {
+                speed = 15;
+            }
+            setTimeout(drawGame, 1000/ speed);
+        }
+
+        function isGameOver() {
+            let gameOver = false;
+
+            if(yVelocity === 0 && xVelocity === 0) {
+                return false;
+            }
+
+            if(headX < 0) {
+                gameOver = true;
+            } else if (headX === tileCount) {
+                gameOver = true;
+            } else if (headY < 0) {
+                gameOver = true;
+            } else if (headY === tileCount) {
+                gameOver = true;
+            }
+
+            for(let i = 0; i < snakeParts.length; i++) {
+                let part = snakeParts[i];
+                if (part.x == headX && part.y === headY) {
+                    gameOver = true;
+                    break;
+                }
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "50px Calibri";
+
+                var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop("0", "magenta");
+                gradient.addColorStop("0.5", "blue");
+                gradient.addColorStop("1.0", "red");
+                ctx.fillStyle = gradient;
+
+                ctx.fillText("Game Over!", canvas.width / 6.5, canvas.height / 2);
+            }
+
+            return gameOver;
+        }
+
+        function drawScore() {
+            ctx.fillStyle = "F1A907";
+            ctx.font = "24px Calibri";
+            ctx.fillText("Score: " + score, canvas.width - 80, 20)
+        }
+
+        function clearScreen() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = "green";
+            for (let i = 0; i < snakeParts.length; i++) {
+                let part = snakeParts[i];
+                ctx.fillRect(part.x * tileCount, part.y * tileCount, tileSize, tileSize);
+            }
+
+            snakeParts.push(new SnakePart(headX, headY));
+            while (snakeParts.length > tailLength) {
+                snakeParts.shift();
+            }
+
+            ctx.fillStyle = "#F1A907";
+            ctx.fillRect(headX * tileCount, headY * tileCount, tileSize, tileSize);
+        }
+
+        function changeSnakePosition() {
+            headX = headX + xVelocity;
+            headY = headY + yVelocity;
+        }
+
+        function drawApple() {
+            ctx.fillStyle = "red";
+            ctx.fillRect(appleX * tileCount, appleY * tileCount, tileSize, tileSize);
+        }
+
+        function checkAppleCollision() {
+            if(appleX === headX && appleY == headY) {
+                appleX = Math.floor(Math.random() * tileCount);
+                appleY = Math.floor(Math.random() * tileCount);
+                tailLength++;
+                score++;
+                gulpSound.play();
+            }
+        }
+
+        document.body.addEventListener("keydown", keyDown);
+
+        function keyDown(event) {
+            // this is the key code for the 'up' arrow!
+            if(event.keyCode == 38) {
+                if(yVelocity == 1)
+                    return;
+                yVelocity = -1;
+                xVelocity = 0;
+            }
+
+            // for the down arrow....
+            if(event.keyCode == 40){
+                if(yVelocity == -1)
+                    return;
+                yVelocity = 1;
+                xVelocity = 0;
+            }
+
+            // for the left arrow...
+            if(event.keyCode == 37) {
+                if(xVelocity == 1)
+                    return;
+                yVelocity = 0;
+                xVelocity = -1;
+            }
+
+            // for the right arrow...
+            if(event.keyCode == 39) {
+                if(xVelocity == -1)
+                    return;
+                yVelocity = 0;
+                xVelocity = 1;
+            }
+        }
+
+        drawGame();
+
+    </script>
+</body>
+</html>
